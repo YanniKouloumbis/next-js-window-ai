@@ -60,9 +60,9 @@ const App: React.FC = () => {
       },
     };
 
-    if (window?.ai) {
+    if ((window as any)?.ai) {
       try {
-        await window.ai.getCompletion(
+        await (window as any).ai.getCompletion(
           { messages: [{ role: 'system', content: 'You are a helpful assistant.' }, ...messages, newMessage] },
           streamingOptions
         );
