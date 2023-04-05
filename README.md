@@ -11,6 +11,7 @@ This is a simple Next JS application that demonstrates how to integrate [window.
 - Responsive design
 
 Built by [Yanni](https://twitter.com/YKouloumbis) & [Nolan](https://twitter.com/nolangclement).
+
 ## Installation
 
 To get started with this app, follow these steps:
@@ -47,6 +48,11 @@ npm run dev
 2. Press "Send" or hit "Enter" to send the message.
 3. The AI assistant will respond with a message after processing your input.
 4. Continue the conversation by sending more messages.
+
+## Deployment
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/YanniKouloumbis/next-js-window-ai)
+
 
 ## Customization
 
