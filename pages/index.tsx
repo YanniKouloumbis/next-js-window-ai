@@ -1,35 +1,38 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-const App = () => {
-  const [messages, setMessages] = useState([]);
-  const [inputValue, setInputValue] = useState('');
-  const [loading, setLoading] = useState(false);
-  const messagesEndRef = useRef(null);
-  const handleSendMessage = async (event) => {
+interface Message {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
+
+const App: React.FC = () => {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputValue, setInputValue] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  const handleSendMessage = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!inputValue) return;
 
-    const newMessage = { role: 'user', content: inputValue };
+    const newMessage: Message = { role: 'user', content: inputValue };
     setMessages((prevMessages) => [...prevMessages, newMessage]);
     setInputValue('');
 
-    // Show loading state while waiting for the AI to respond
     setLoading(true);
 
-    // Keep track of the updated messages array
     let updatedMessages = [...messages, newMessage];
 
     const streamingOptions = {
       temperature: 1,
       maxTokens: 1000,
-      onStreamResult: (result, error) => {
+      onStreamResult: (result?: { message: Message }, error?: Error) => {
         if (error) {
           console.error(error);
           setLoading(false);
         } else if (result) {
           setLoading(false);
 
-          // Process the AI assistant's response
           const lastMessage = updatedMessages[updatedMessages.length - 1];
           if (lastMessage.role === 'user') {
             setLoading(false);
@@ -52,13 +55,11 @@ const App = () => {
             });
           }
 
-          // Update the messages state
           setMessages(updatedMessages);
         }
       },
     };
 
-    // Call the AI with the current messages and streaming options
     if (window?.ai) {
       try {
         await window.ai.getCompletion(
