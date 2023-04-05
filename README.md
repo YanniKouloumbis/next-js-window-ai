@@ -1,38 +1,69 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Next JS x window.ai
 
-## Getting Started
+This is a simple Next JS application that demonstrates how to integrate `window.ai` to build a chatbot interface. The app provides a user-friendly chat interface for users to communicate with an AI assistant.
 
-First, run the development server:
+## Features
+
+- User-friendly chat interface
+- AI assistant powered by `window.ai`
+- Automatically scrolls to the most recent message
+- Loading state while waiting for the AI to respond
+- Responsive design
+
+## Installation
+
+To get started with this app, follow these steps:
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/yourusername/nextjs-window-ai.git
+```
+
+2. Change directory to the project folder:
+
+```bash
+cd nextjs-window-ai
+```
+
+3. Install the required dependencies:
+
+```bash
+npm install
+```
+
+4. Start the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+5. Visit `http://localhost:3000` in your browser to see the app in action.
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+## Usage
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+1. Type a message in the input field at the bottom of the chat window.
+2. Press "Send" or hit "Enter" to send the message.
+3. The AI assistant will respond with a message after processing your input.
+4. Continue the conversation by sending more messages.
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+## Customization
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+You can customize the app by modifying the `src/App.js` file. Here are some ideas for customization:
 
-## Learn More
+- Change the initial system message to set a different context for the AI assistant.
+- Adjust the streaming options like `temperature` and `maxTokens` to control the AI's response.
+- Update the UI to match your branding by changing colors, fonts, and other styles.
 
-To learn more about Next.js, take a look at the following resources:
+## Contributing
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Feel free to contribute to this project by submitting a pull request, reporting bugs, or suggesting new features.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+## License
 
-## Deploy on Vercel
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Acknowledgments
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+- The `window.ai` library for providing the AI assistant functionality.
+- The Next.js framework for simplifying the development of React applications.
