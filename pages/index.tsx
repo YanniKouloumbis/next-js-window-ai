@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-
+import toast, { Toaster } from 'react-hot-toast';
+import Link from 'next/link';
 interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
@@ -10,6 +11,44 @@ const App: React.FC = () => {
   const [inputValue, setInputValue] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const aiRef = useRef<any>(null);
+
+  useEffect(() => {
+    const waitForAI = async () => {
+      let timeoutCounter = 0;
+      while (!(window as any).ai) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        timeoutCounter += 100;
+        if (timeoutCounter >= 1000) {
+          toast.custom(
+            <div className="bg-blue-500 text-white p-4 rounded-lg shadow-md flex items-center space-x-2">
+              <div>Please visit</div>
+              <Link
+                href="https://windowai.io"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline font-semibold"
+              >
+                windowai.io
+              </Link>
+              <div>to install window.ai</div>
+            </div>, {
+              id: 'window-ai-not-detected',
+            }
+          );
+          break;
+        }
+      }
+      if((window as any).ai){
+        aiRef.current = (window as any).ai;
+        toast.success('window.ai detected!', {
+          id: 'window-ai-detected',
+        });
+      }
+      
+    };
+    waitForAI();
+  }, []);
 
   const handleSendMessage = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -28,7 +67,7 @@ const App: React.FC = () => {
       maxTokens: 1000,
       onStreamResult: (result?: { message: Message }, error?: Error) => {
         if (error) {
-          console.error(error);
+          toast.error('window.ai streaming completion failed.');
           setLoading(false);
         } else if (result) {
           setLoading(false);
@@ -60,15 +99,16 @@ const App: React.FC = () => {
       },
     };
 
-    if ((window as any)?.ai) {
+    if (aiRef.current) {
       try {
-        await (window as any).ai.getCompletion(
+        await aiRef.current.getCompletion(
           { messages: [{ role: 'system', content: 'You are a helpful assistant.' }, ...messages, newMessage] },
           streamingOptions
         );
       } catch (e) {
         setLoading(false);
-        console.error(e);
+        //comment this if not using window.ai onStreamResult - otherwise redudant
+        //toast.error('Window.ai completion failed.');
       }
     }
   };
@@ -111,6 +151,7 @@ const App: React.FC = () => {
           </button>
         </form>
       </div>
+      <Toaster />
     </div>
   );
 };
