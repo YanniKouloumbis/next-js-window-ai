@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import InstallationToast from '@/components/toast';
-import {ChatMessage, getWindowAI } from "window.ai"
+import {ChatMessage, MessageOutput, WindowAI, getWindowAI } from "window.ai"
 
 const App: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const aiRef = useRef<any>(null);
+  const aiRef = useRef<WindowAI | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -49,9 +49,9 @@ const App: React.FC = () => {
     let updatedMessages = [...messages, newMessage];
 
     const streamingOptions = {
-      temperature: 1,
-      maxTokens: 1000,
-      onStreamResult: (result?: { message: ChatMessage }, error?: Error) => {
+      temperature: .7,
+      maxTokens: 10000,
+      onStreamResult: (result: MessageOutput | null, error: string | null) => {
         if (error) {
           toast.error('window.ai streaming completion failed.');
           setLoading(false);
@@ -85,7 +85,7 @@ const App: React.FC = () => {
       },
     };
     try {
-      await aiRef.current.getCompletion(
+      await aiRef.current.generateText(
         { messages: [{ role: 'system', content: 'You are a helpful assistant.' }, ...messages, newMessage] },
         streamingOptions
       );
