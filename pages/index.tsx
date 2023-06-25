@@ -26,6 +26,14 @@ const App: React.FC = () => {
     init();
   }, []);
 
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
   const handleSendMessage = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!inputValue) return;
@@ -43,6 +51,7 @@ const App: React.FC = () => {
     setLoading(true);
     setInputValue("");
 
+    //streaming options settings for window.ai
     const streamingOptions = {
       temperature: 0.7,
       maxTokens: 1000,
@@ -56,7 +65,6 @@ const App: React.FC = () => {
           const lastMessage = updatedMessages[updatedMessages.length - 1];
           // if the last message is from a user, init a new message
           if (lastMessage.role === "user") {
-            setLoading(false);
             updatedMessages = [
               ...updatedMessages,
               {
@@ -80,6 +88,7 @@ const App: React.FC = () => {
         }
       },
     };
+    //function call to window.ai to generate text, using our streaming options
     try {
       await aiRef.current.generateText(
         {
@@ -95,14 +104,6 @@ const App: React.FC = () => {
       console.error(e);
     }
   };
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
