@@ -40,25 +40,26 @@ const App: React.FC = () => {
       return;
     }
 
-    const newMessage: ChatMessage = { role: 'user', content: inputValue };
-    setMessages((prevMessages) => [...prevMessages, newMessage]);
+    const userMessage: ChatMessage = { role: 'user', content: inputValue };
+    //creates a local variable to handle streaming state
+    let updatedMessages: ChatMessage[]  = [...messages, userMessage];
+    setMessages((prevMessages) => [...prevMessages, userMessage]);
+    setLoading(true);
     setInputValue('');
 
-    setLoading(true);
-
-    let updatedMessages = [...messages, newMessage];
 
     const streamingOptions = {
       temperature: .7,
-      maxTokens: 10000,
+      maxTokens: 1000,
       onStreamResult: (result: MessageOutput | null, error: string | null) => {
+        setLoading(false);
         if (error) {
           toast.error('window.ai streaming completion failed.');
-          setLoading(false);
+          return;
         } else if (result) {
-          setLoading(false);
-
+          console.log(result)
           const lastMessage = updatedMessages[updatedMessages.length - 1];
+          // if the last message is from a user, init a new message
           if (lastMessage.role === 'user') {
             setLoading(false);
             updatedMessages = [
@@ -69,6 +70,7 @@ const App: React.FC = () => {
               },
             ];
           } else {
+            // if the last message is from the assistant, append the streaming result to the last message
             updatedMessages = updatedMessages.map((message, index) => {
               if (index === updatedMessages.length - 1) {
                 return {
@@ -79,19 +81,18 @@ const App: React.FC = () => {
               return message;
             });
           }
-
           setMessages(updatedMessages);
         }
       },
     };
     try {
       await aiRef.current.generateText(
-        { messages: [{ role: 'system', content: 'You are a helpful assistant.' }, ...messages, newMessage] },
+        { messages: [{ role: 'system', content: 'You are a helpful assistant.' }, ...updatedMessages] },
         streamingOptions
       );
     } catch (e) {
-      toast.error('window.ai streaming completion failed.');
-      setLoading(false);
+      toast.error('window.ai generation completion failed.');
+      console.error(e)
     }
   };
 
