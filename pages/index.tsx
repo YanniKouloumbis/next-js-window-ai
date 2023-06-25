@@ -1,88 +1,79 @@
-import React, { useState, useEffect, useRef } from 'react';
-import toast, { Toaster } from 'react-hot-toast';
-import Link from 'next/link';
-interface Message {
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-}
+import React, { useState, useEffect, useRef } from "react";
+import toast, { Toaster } from "react-hot-toast";
+import InstallationToast from "@/components/toast";
+import { ChatMessage, MessageOutput, WindowAI, getWindowAI } from "window.ai";
 
 const App: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [inputValue, setInputValue] = useState<string>('');
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [inputValue, setInputValue] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const aiRef = useRef<any>(null);
+  const aiRef = useRef<WindowAI | null>(null);
 
   useEffect(() => {
-    const waitForAI = async () => {
-      let timeoutCounter = 0;
-      while (!(window as any).ai) {
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        timeoutCounter += 100;
-        if (timeoutCounter >= 1000) {
-          toast.custom(
-            <div className="bg-blue-500 text-white p-4 rounded-lg shadow-md flex items-center space-x-2">
-              <div>Please visit</div>
-              <Link
-                href="https://windowai.io"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline font-semibold"
-              >
-                windowai.io
-              </Link>
-              <div>to install window.ai</div>
-            </div>, {
-              id: 'window-ai-not-detected',
-            }
-          );
-          break;
-        }
-      }
-      if((window as any).ai){
-        aiRef.current = (window as any).ai;
-        toast.success('window.ai detected!', {
-          id: 'window-ai-detected',
+    const init = async () => {
+      aiRef.current = await getWindowAI();
+      if (aiRef.current) {
+        toast.success("window.ai detected!", {
+          id: "window-ai-detected",
+        });
+      } else {
+        toast.custom(<InstallationToast />, {
+          id: "window-ai-not-detected",
         });
       }
-      
     };
-    waitForAI();
+    init();
   }, []);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const handleSendMessage = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!inputValue) return;
+    if (!aiRef.current) {
+      toast.custom(<InstallationToast />, {
+        id: "window-ai-not-detected",
+      });
+      return;
+    }
 
-    const newMessage: Message = { role: 'user', content: inputValue };
-    setMessages((prevMessages) => [...prevMessages, newMessage]);
-    setInputValue('');
-
+    const userMessage: ChatMessage = { role: "user", content: inputValue };
+    //creates a local variable to handle streaming state
+    let updatedMessages: ChatMessage[] = [...messages, userMessage];
+    setMessages((prevMessages) => [...prevMessages, userMessage]);
     setLoading(true);
+    setInputValue("");
 
-    let updatedMessages = [...messages, newMessage];
-
+    //streaming options settings for window.ai
     const streamingOptions = {
-      temperature: 1,
+      temperature: 0.7,
       maxTokens: 1000,
-      onStreamResult: (result?: { message: Message }, error?: Error) => {
+      onStreamResult: (result: MessageOutput | null, error: string | null) => {
+        setLoading(false);
         if (error) {
-          toast.error('window.ai streaming completion failed.');
-          setLoading(false);
+          toast.error("window.ai streaming completion failed.");
+          return;
         } else if (result) {
-          setLoading(false);
-
+          console.log(result);
           const lastMessage = updatedMessages[updatedMessages.length - 1];
-          if (lastMessage.role === 'user') {
-            setLoading(false);
+          // if the last message is from a user, init a new message
+          if (lastMessage.role === "user") {
             updatedMessages = [
               ...updatedMessages,
               {
-                role: 'assistant',
+                role: "assistant",
                 content: result.message.content,
               },
             ];
           } else {
+            // if the last message is from the assistant, append the streaming result to the last message
             updatedMessages = updatedMessages.map((message, index) => {
               if (index === updatedMessages.length - 1) {
                 return {
@@ -93,33 +84,26 @@ const App: React.FC = () => {
               return message;
             });
           }
-
           setMessages(updatedMessages);
         }
       },
     };
-
-    if (aiRef.current) {
-      try {
-        await aiRef.current.getCompletion(
-          { messages: [{ role: 'system', content: 'You are a helpful assistant.' }, ...messages, newMessage] },
-          streamingOptions
-        );
-      } catch (e) {
-        setLoading(false);
-        //comment this if not using window.ai onStreamResult - otherwise redudant
-        //toast.error('Window.ai completion failed.');
-      }
+    //function call to window.ai to generate text, using our streaming options
+    try {
+      await aiRef.current.generateText(
+        {
+          messages: [
+            { role: "system", content: "You are a helpful assistant." },
+            ...updatedMessages,
+          ],
+        },
+        streamingOptions
+      );
+    } catch (e) {
+      toast.error("window.ai generation completion failed.");
+      console.error(e);
     }
   };
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -127,8 +111,17 @@ const App: React.FC = () => {
         <h1 className="text-3xl font-bold mb-4">Next JS x window.ai</h1>
         <div className="overflow-y-auto h-96 mb-4">
           {messages.map((message, index) => (
-            <div key={index} className={`mb-2 ${message.role === 'user' ? 'text-right' : ''}`}>
-              <span className={`inline-block p-2 rounded-lg text-left ${message.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-300 text-black'}`}>
+            <div
+              key={index}
+              className={`mb-2 ${message.role === "user" ? "text-right" : ""}`}
+            >
+              <span
+                className={`inline-block p-2 rounded-lg text-left ${
+                  message.role === "user"
+                    ? "bg-blue-500 text-white"
+                    : "bg-gray-300 text-black"
+                }`}
+              >
                 {message.content}
               </span>
             </div>
@@ -145,9 +138,11 @@ const App: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className={`ml-2 bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold ${loading ? 'opacity-50' : ''}`}
+            className={`ml-2 bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold ${
+              loading ? "opacity-50" : ""
+            }`}
           >
-            {loading ? 'Sending...' : 'Send'}
+            {loading ? "Sending..." : "Send"}
           </button>
         </form>
       </div>
