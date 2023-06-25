@@ -1,60 +1,46 @@
 import React, { useState, useEffect, useRef } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
-import Link from 'next/link';
-interface Message {
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-}
+import InstallationToast from '@/components/toast';
+import {ChatMessage, getWindowAI } from "window.ai"
 
 const App: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const aiRef = useRef<any>(null);
 
   useEffect(() => {
-    const waitForAI = async () => {
-      let timeoutCounter = 0;
-      while (!(window as any).ai) {
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        timeoutCounter += 100;
-        if (timeoutCounter >= 1000) {
-          toast.custom(
-            <div className="bg-blue-500 text-white p-4 rounded-lg shadow-md flex items-center space-x-2">
-              <div>Please visit</div>
-              <Link
-                href="https://windowai.io"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline font-semibold"
-              >
-                windowai.io
-              </Link>
-              <div>to install window.ai</div>
-            </div>, {
-              id: 'window-ai-not-detected',
-            }
-          );
-          break;
-        }
-      }
-      if((window as any).ai){
-        aiRef.current = (window as any).ai;
+    const init = async () => {
+      aiRef.current = await getWindowAI();
+      if(aiRef.current){
         toast.success('window.ai detected!', {
           id: 'window-ai-detected',
         });
+      } else{
+        toast.custom(
+          <InstallationToast/>, {
+            id: 'window-ai-not-detected',
+          }
+        );
       }
-      
     };
-    waitForAI();
+    init();
   }, []);
 
   const handleSendMessage = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!inputValue) return;
+    if(!aiRef.current){
+      toast.custom(
+        <InstallationToast/>, {
+          id: 'window-ai-not-detected',
+        }
+      );
+      return;
+    }
 
-    const newMessage: Message = { role: 'user', content: inputValue };
+    const newMessage: ChatMessage = { role: 'user', content: inputValue };
     setMessages((prevMessages) => [...prevMessages, newMessage]);
     setInputValue('');
 
@@ -65,7 +51,7 @@ const App: React.FC = () => {
     const streamingOptions = {
       temperature: 1,
       maxTokens: 1000,
-      onStreamResult: (result?: { message: Message }, error?: Error) => {
+      onStreamResult: (result?: { message: ChatMessage }, error?: Error) => {
         if (error) {
           toast.error('window.ai streaming completion failed.');
           setLoading(false);
@@ -98,18 +84,14 @@ const App: React.FC = () => {
         }
       },
     };
-
-    if (aiRef.current) {
-      try {
-        await aiRef.current.getCompletion(
-          { messages: [{ role: 'system', content: 'You are a helpful assistant.' }, ...messages, newMessage] },
-          streamingOptions
-        );
-      } catch (e) {
-        setLoading(false);
-        //comment this if not using window.ai onStreamResult - otherwise redudant
-        //toast.error('Window.ai completion failed.');
-      }
+    try {
+      await aiRef.current.getCompletion(
+        { messages: [{ role: 'system', content: 'You are a helpful assistant.' }, ...messages, newMessage] },
+        streamingOptions
+      );
+    } catch (e) {
+      toast.error('window.ai streaming completion failed.');
+      setLoading(false);
     }
   };
 
